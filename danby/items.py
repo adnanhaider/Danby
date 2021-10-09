@@ -6,7 +6,17 @@
 import scrapy
 
 
-class DanbyItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class Manual(scrapy.Item):
+    model = scrapy.Field()  # product name without brand
+    model_2 = scrapy.Field()  # alternative product name (optional)
+    brand = scrapy.Field()  # brand name
+    product = scrapy.Field()  # product (for example "washing machines")
+    product_parent = scrapy.Field()  # "domestic appliances" for example (optional)
+    product_lang = scrapy.Field()  # product field language, two digit language code (optional)
+    file_urls = scrapy.Field()  # url to PDF (as an array)
+    eans = scrapy.Field()  # optional product EANs
+    files = scrapy.Field()  # internal
+    type = scrapy.Field()  # type, for example "quick start guide", "datasheet" or "manual" (optional if type = manual)
+    url = scrapy.Field()  # url of the page containing link to pdf
+    thumb = scrapy.Field()  # thumbnail (optional)
+    source = scrapy.Field()  # hostname without http/www to identify the source, for example dyson.com or walmart.com
