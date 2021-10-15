@@ -7,10 +7,15 @@ logger = logging.getLogger(__name__)
 
 class Danby(SitemapSpider):
     name = 'danby'
-    sitemap_urls = ['https://www.danby.com/en-us/wp-sitemap-posts-product-1.xml']
+    sitemap_urls = [
+        'https://www.danby.com/en-us/wp-sitemap-posts-product-1.xml',
+        'https://www.danby.com/fr/wp-sitemap-posts-product-1.xml',
+        'https://www.danby.com/wp-sitemap-posts-product-1.xml'
+    ]
     sitemap_rules = [('/products/', 'parse')]
 
     def parse(self, response):
+        
         pdfs = response.css('.product-download-link')
         for pdf in pdfs:
             manual = Manual()
@@ -22,6 +27,9 @@ class Danby(SitemapSpider):
             lang = c_url.split('/')[3]
             if 'en-uk' in lang or 'en-us' in lang or 'fr' in lang:
                 product  = c_url.split('/')[5].replace(lang, '').replace('-', ' ').title().strip()
+            else:
+                product  = c_url.split('/')[4].replace('-', ' ').title().strip()
+                lang = 'en'
             thumb = response.css('.taller::attr(src)').get()
             if not thumb:
                 thumb = response.css('.slides:nth-child(2) img::attr(src)').get()
