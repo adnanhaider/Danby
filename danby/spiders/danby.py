@@ -13,8 +13,19 @@ class Danby(SitemapSpider):
         'https://www.danby.com/wp-sitemap-posts-product-1.xml'
     ]
     sitemap_rules = [('/products/', 'parse')]
-
+    
     def parse(self, response):
+        
+        dictionary = {}
+        divs = response.css('.container ul.nav  .menu-item.menu-item-has-children')
+        for div in divs:
+            arr = []
+            name = div.css('.menu-item-text::text').get()
+
+            for sub_menu_item in div.css('.sub-menu .menu-item-text'):
+                product = sub_menu_item.css('::text').get()
+                arr.append(product)
+            dictionary[name] = arr
         pdfs = response.css('.product-download-link')
         for pdf in pdfs:
             manual = Manual()
@@ -32,11 +43,10 @@ class Danby(SitemapSpider):
                 continue
             if 'en-uk' in lang or 'en-us' in lang or 'fr' in lang:
                 parent_product  = c_url.split('/')[5].replace(lang, '').replace('-', ' ').title().strip()
-                # parent_product, product = self.get_parent_and_product_names(parent_product, product, c_url)
-                parent_product, product = self.get_parent_and_product_names(parent_product, product, c_url)
+                parent_product, product = self.get_parent_and_product_names(parent_product, product, dictionary)
             else:
                 parent_product  = c_url.split('/')[4].replace('-', ' ').title().strip()
-                parent_product, product = self.get_parent_and_product_names(parent_product, product, c_url)
+                parent_product, product = self.get_parent_and_product_names(parent_product, product, dictionary)
                 lang = 'en'
             if not parent_product or not product:
                 continue
@@ -76,63 +86,34 @@ class Danby(SitemapSpider):
 
             yield manual
 
-    def get_parent_and_product_names(self, pp, p, c_url):
-        en_parent_products = {
-        'Refrigeration' : ['Apartment Size Refrigerators','Apartment Size Refrigerator', 'Compact Refrigerators',"Compact Refrigerator", 'Freezers', "Freezers", 'Health Medical and Clinical Fridges', "Health Medical and Clinical Fridge"],
-        'Entertaining' : ['Beverage Centers','Beverage Center', 'Ice Makers', 'Ice Maker', 'Kegerators', 'Kegerator', 'Wine Coolers', 'Wine Cooler'], 
-        'Climate Control' : ['Air Purifiers','Air Purifier', 'Dehumidifiers', 'Dehumidifier', 'Ductless Split Systems','Ductless Split System', 'Packaged Terminal Air Conditioners','Packaged Terminal Air Conditioner', 'Portable Air Conditioners','Portable Air Conditioner', 'Window Air Conditioners','Window Air Conditioner'],
-        'Niche': ['Home Herb Grower', 'Parcel Mailbox', 'Specialty'],
-        'Kitchen': ['Dishwashers','Dishwasher', 'Microwaves','Microwave', 'Ranges','Range', 'Toaster Ovens','Toaster Oven'],
-        'Laundry': ['Accessories','Accessorie', 'Dryers','Dryer', 'Washing Machines','Washing Machine']
-            }
-        fr_parent_products = {
-        'Divertissement': ['Divertissement', 'Refroidisseurs de boissons', 'Refroidisseurs de boisson', 'Refroidisseur de boisson', 'Machines à glaçons','Machine à glaçons', 'Machines à glaçon','Machine à glaçon', 'Rafraîchisseurs de fûts de bière', 'Rafraîchisseur de fûts de bière', 'Refroidisseurs à vin', 'Refroidisseur à vin'], 
-        'Confort Au Foyer': ['Confort au foyer', 'Purificateurs d’air','Purificateur d’air', 'Systèmes De Séparation Sans Conduit', 'Système De Séparation Sans Conduit', 'Déshumidificateurs', 'Déshumidificateur', 'Climatiseurs portatifs', 'Climatiseur portatif','Climatiseurs de fenêtre', 'Climatiseur de fenêtre'], 
-        'Cuisine': ['Cuisine','Lave-vaiselle', 'Fours à micro-ondes', 'Four à micro-ondes', 'Four à micro-onde', 'Cuisinières', 'Cuisinières', 'Fours Grille-pains', 'Four Grille-pains', 'Four Grille-pain'], 
-        'Buanderie': ['Buanderie', 'Accessoires', 'Accessoire', 'Machines à laver le linge' , 'Machine à laver le linge', 'Sécheuses', 'Sécheuse'], 
-        'Refrigeration': ['Réfrigération', 'Réfrigérateurs pour petites surfaces', 'Réfrigérateurs pour petites surface', 'Réfrigérateur pour petite surface', 'Réfrigérateur pour petites surface', 'Réfrigération Compact', 'Congélateurs', 'Congélateur', 'Danby Santé', 'Danby Santé'], 
-        'Niche': ['Niche', 'Home Herb Grower', 'Colis Postal', 'Spécialité']}
+    def get_parent_and_product_names(self, pp, p, dictionary):
         parent_product = ''
         product = ''
         foundPP = False
-        if '/fr/' in c_url:
-            for key_arr in list(fr_parent_products.keys()):
-                if key_arr.lower().strip() == pp.lower().strip():
-                    foundPP = True
-                    parent_product = list(fr_parent_products.keys())[0]
-                    for product_title in fr_parent_products[key_arr]:
-                        if self.matchProducts(p,product_title):
-                            product = product_title
-            if not foundPP:
-                for key_arr in list(fr_parent_products.keys()):
-                    for product_title in fr_parent_products[key_arr]:
-                        if pp.lower() == product_title.lower():
-                            parent_product = list(fr_parent_products.keys())[0]
-                            product = product_title
-        else:
-            for key_arr in list(en_parent_products.keys()):
-                if key_arr.lower().strip() == pp.lower().strip():
-                    foundPP = True
-                    parent_product = key_arr
-                    for product_title in en_parent_products[key_arr]:
-                        if self.matchProducts(p,product_title):
-                            product = product_title
-            if not foundPP:
-                for key_arr in list(en_parent_products.keys()):
-                    for product_title in en_parent_products[key_arr]:
-                        if pp.lower() == product_title.lower():
-                            parent_product = key_arr
-                            product = product_title
-
+        for key_arr in list(dictionary.keys()):
+            if key_arr.lower().strip() == pp.lower().strip():
+                foundPP = True
+                parent_product = key_arr
+                for product_title in dictionary[key_arr]:
+                    if self.matchProducts(p,product_title):
+                        product = product_title
+        
         return parent_product, product
     
     def matchProducts(self, p, product_title):
         parts_of_pro_title = product_title.strip().split(' ')
         count = 0
         for part in parts_of_pro_title:
-            if part in p:
+            # if part in p:
+            if self.matchSingularOrPluralOfPart(part, p):
                 count = count + 1
         if count == len(parts_of_pro_title):
             return True
         else:
             return False
+    def matchSingularOrPluralOfPart(self, part, p):
+        part = part.lower()
+        p = p.lower()
+        if(part[:-1] in p or part[:-2] in p or p[:-1] in part or p[:-2] in part or part in p):
+            return True
+        return False
